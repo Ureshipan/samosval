@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Образ #{{ img.id }} — Самосвал{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Образ #{{ img.id }} — {{ img.image_tag }}</h1>
+    <div class="page-header-actions">
+        <a href="{{ url_for('images.list_images') }}" class="btn btn-secondary">К списку</a>
+    </div>
+</div>
+
+<section class="card two-cols">
+    <div>
+        <h2>Информация об образе</h2>
+        <dl class="def-list">
+            <dt>Имя</dt>
+            <dd>{{ img.name }}</dd>
+            <dt>Версия</dt>
+            <dd>{{ img.version }}</dd>
+            <dt>Tag</dt>
+            <dd>{{ img.image_tag }}</dd>
+            <dt>Репозиторий</dt>
+            <dd>{{ img.repo_url }}@{{ img.repo_branch }}</dd>
+            <dt>Режим обновления</dt>
+            <dd>{{ img.update_mode }}</dd>
+            <dt>Создан</dt>
+            <dd>{{ img.created_at }}</dd>
+        </dl>
+    </div>
+    <div>
+        {% if current_user.role in ['operator','admin'] %}
+        <h2>Создать развёртывание</h2>
+        <form method="post" action="{{ url_for('images.create_deployment_from_image', image_id=img.id) }}" class="form-grid">
+            <label>
+                Имя
+                <input type="text" name="name" placeholder="человеко-понятное имя">
+            </label>
+            <label>
+                Окружение
+                <select name="environment">
+                    {% for env in ['dev','staging','prod'] %}
+                        <option value="{{ env }}">{{ env }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Реплики
+                <input type="number" name="replicas" value="1" min="1">
+            </label>
+            <label>
+                Ports (пример: 8000:8000,8001:8001)
+                <input type="text" name="ports">
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Создать</button>
+            </div>
+        </form>
+        {% else %}
+            <p class="muted">Создавать развёртывания могут только пользователи с ролью operator / admin.</p>
+        {% endif %}
+
+        <div class="simulate-commit">
+            <button type="button" class="btn btn-accent" id="simulate-commit-btn">
+                Симулировать новый commit
+            </button>
+            <p class="hint">Вызывает <code>POST /api/hooks/commit</code> для этого репозитория.</p>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Развёртывания</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Окр.</th>
+            <th>Статус</th>
+            <th>Реплики</th>
+            <th>Порты</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for d in deployments %}
+            <tr>
+                <td>#{{ d.id }}</td>
+                <td>{{ d.name }}</td>
+                <td>{{ d.environment }}</td>
+                <td><span class="badge {{ d.status }}">{{ d.status }}</span></td>
+                <td>{{ d.replicas }}</td>
+                <td class="muted">{{ d.ports or '—' }}</td>
+                <td><a href="{{ url_for('deployments.view_deployment', deployment_id=d.id) }}" class="btn btn-small">Открыть</a></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7" class="muted">Развёртываний ещё нет</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<script>
+    (function () {
+        const btn = document.getElementById('simulate-commit-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            const repoUrl = "{{ img.repo_url }}";
+            const branch = "{{ img.repo_branch }}";
+            const commit = "simulated-" + Date.now();
+            fetch("{{ url_for('api.commit_hook') }}", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({repo_url: repoUrl, branch: branch, commit: commit})
+            })
+                .then(r => r.json())
+                .then(data => {
+                    alert("Подходящих развёртываний: " + data.matched_deployments +
+                        "\\nПерезапущено автоматически: " + data.restarted +
+                        "\\nПомечено для рестарта: " + data.marked_for_restart);
+                    location.reload();
+                })
+                .catch(err => alert("Ошибка: " + err));
+        });
+    })();
+</script>
+{% endblock %}
+
+

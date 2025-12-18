@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Развёртывание #{{ deployment.id }} — Самосвал{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Развёртывание #{{ deployment.id }} — {{ deployment.name }}</h1>
+    <div class="page-header-actions">
+        <span class="badge {{ deployment.status }}">{{ deployment.status }}</span>
+        {% if can_control %}
+            <form method="post" action="{{ url_for('deployments.start_deployment', deployment_id=deployment.id) }}" style="display:inline">
+                <button class="btn btn-small btn-primary" type="submit">Старт</button>
+            </form>
+            <form method="post" action="{{ url_for('deployments.stop_deployment', deployment_id=deployment.id) }}" style="display:inline">
+                <button class="btn btn-small btn-secondary" type="submit">Стоп</button>
+            </form>
+            <form method="post" action="{{ url_for('deployments.restart_deployment', deployment_id=deployment.id) }}" style="display:inline">
+                <button class="btn btn-small btn-accent" type="submit">Рестарт</button>
+            </form>
+        {% endif %}
+        {% if current_user.role in ['operator','admin'] %}
+            <form method="post" action="{{ url_for('deployments.delete_deployment', deployment_id=deployment.id) }}" style="display:inline" onsubmit="return confirm('Удалить развёртывание?');">
+                <button class="btn btn-small btn-danger" type="submit">Удалить</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<section class="card two-cols">
+    <div>
+        <h2>Информация</h2>
+        <dl class="def-list">
+            <dt>Окружение</dt>
+            <dd>{{ deployment.environment }}</dd>
+            <dt>Image tag</dt>
+            <dd>{{ deployment.image_tag }}</dd>
+            <dt>Реплики</dt>
+            <dd>{{ deployment.replicas }}</dd>
+            <dt>Порты</dt>
+            <dd>{{ deployment.ports or '—' }}</dd>
+            <dt>Остановлено оператором</dt>
+            <dd>{{ 'да' if deployment.stopped_by_operator else 'нет' }}</dd>
+            <dt>Нужен рестарт</dt>
+            <dd>{{ 'да' if deployment.needs_restart else 'нет' }}</dd>
+        </dl>
+    </div>
+    <div>
+        <h2>Метрики</h2>
+        <div class="charts-grid">
+            <div class="metric-chart">
+                <h3>CPU, %</h3>
+                <canvas id="cpu-chart"></canvas>
+            </div>
+            <div class="metric-chart">
+                <h3>RAM, %</h3>
+                <canvas id="ram-chart"></canvas>
+            </div>
+        </div>
+        <p class="hint">Обновление каждые 2–3 секунды.</p>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Логи</h2>
+    <div class="logs-header">
+        <label>
+            <input type="checkbox" id="realtime-toggle" checked> Реалтайм (SSE)
+        </label>
+    </div>
+    <pre id="logs-window" class="log-window">
+{% for line in recent_logs %}
+{{ line }}
+{% endfor %}
+    </pre>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/metrics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/logs_sse.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.initDeploymentMetrics) {
+            window.initDeploymentMetrics({
+                deploymentId: {{ deployment.id }},
+                metricsUrl: "{{ url_for('api.deployment_metrics', deployment_id=deployment.id) }}",
+                cpuCanvasId: "cpu-chart",
+                ramCanvasId: "ram-chart",
+                refreshIntervalMs: 2500
+            });
+        }
+        if (window.initDeploymentLogsSSE) {
+            window.initDeploymentLogsSSE({
+                deploymentId: {{ deployment.id }},
+                sseUrl: "{{ url_for('api.deployment_logs_stream', deployment_id=deployment.id) }}",
+                logElementId: "logs-window",
+                toggleId: "realtime-toggle"
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+

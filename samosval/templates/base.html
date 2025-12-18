@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Самосвал{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <script defer src="{{ url_for('static', filename='js/users_autocomplete.js') }}"></script>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="brand">Самосвал</a>
+            {% if current_user.is_authenticated %}
+                <nav class="nav">
+                    <a href="{{ url_for('dashboard.dashboard') }}">Дашборд</a>
+                    <a href="{{ url_for('requests.list_requests') }}">Заявки</a>
+                    <a href="{{ url_for('builds.list_builds') }}">Сборки</a>
+                    <a href="{{ url_for('images.list_images') }}">Образы</a>
+                    <a href="{{ url_for('deployments.list_deployments') }}">Развёртывания</a>
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin.users') }}">Админка</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        </div>
+        <div class="topbar-right">
+            {% if current_user.is_authenticated %}
+                <span class="user-pill">
+                    {{ current_user.username }}
+                    ({{
+                        {'admin': 'админ',
+                         'operator': 'оператор',
+                         'developer': 'разработчик'
+                        }.get(current_user.role, current_user.role)
+                    }})
+                </span>
+                <form method="post" action="{{ url_for('auth.logout') }}">
+                    <button type="submit" class="btn btn-danger btn-small">Выход</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
+
+

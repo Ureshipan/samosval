@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Заявка #{{ req.id }} — Самосвал{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Заявка #{{ req.id }} — {{ req.image_name }}</h1>
+    <div class="page-header-actions">
+        <span class="badge {{ req.status }}">{{ req.status }}</span>
+        {% if current_user.role == 'developer' and req.status == 'draft' %}
+            <form method="post" action="{{ url_for('requests.submit_request', request_id=req.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-primary">Отправить оператору</button>
+            </form>
+        {% endif %}
+        {% if current_user.role in ['operator', 'admin'] %}
+            <a href="{{ url_for('requests.list_requests') }}" class="btn btn-secondary">К списку</a>
+        {% endif %}
+        {% if current_user.role in ['developer','operator','admin'] %}
+            <a href="{{ url_for('requests.edit_request_get', request_id=req.id) }}" class="btn btn-secondary">Редактировать</a>
+        {% endif %}
+    </div>
+</div>
+
+<section class="card two-cols">
+    <div>
+        <h2>Основная информация</h2>
+        <dl class="def-list">
+            <dt>Репозиторий</dt>
+            <dd>{{ req.repo_url }}@{{ req.repo_branch }}</dd>
+            <dt>Режим обновления</dt>
+            <dd>{{ req.update_mode }}</dd>
+            <dt>Целевой commit</dt>
+            <dd>{{ req.target_commit or '—' }}</dd>
+            <dt>Базовый образ</dt>
+            <dd>{{ req.base_image }}</dd>
+            <dt>Точка входа</dt>
+            <dd>{{ req.entrypoint or '—' }}</dd>
+            <dt>Команды RUN</dt>
+            <dd><pre class="code-block">{{ req.run_commands or '' }}</pre></dd>
+        </dl>
+    </div>
+    <div>
+        <h2>Роли и ресурсы</h2>
+        <dl class="def-list">
+            <dt>RAM</dt>
+            <dd>{{ req.ram_mb }} MB</dd>
+            <dt>vCPU</dt>
+            <dd>{{ req.vcpu }}</dd>
+            <dt>Версия (tag)</dt>
+            <dd>{{ req.version_tag }}</dd>
+            <dt>Owner (владелец)</dt>
+            <dd>{{ req.owner_username }}</dd>
+            <dt>Создана пользователем</dt>
+            <dd>{{ req.created_by_username }}</dd>
+            <dt>Соисполнители (collaborators)</dt>
+            <dd>{{ req.collaborators or '—' }}</dd>
+        </dl>
+        <div class="simulate-commit">
+            <button type="button" class="btn btn-accent" id="simulate-commit-btn">
+                Симулировать новый commit
+            </button>
+            <p class="hint">Вызывает <code>POST /api/hooks/commit</code> для этого репозитория (режим continuous).</p>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Сборки</h2>
+    {% if current_user.role in ['operator','admin'] %}
+        <form method="post" action="{{ url_for('requests.trigger_build', request_id=req.id) }}">
+            <button type="submit" class="btn btn-primary">Запустить build</button>
+        </form>
+    {% endif %}
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Статус</th>
+            <th>Создан</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for b in builds %}
+            <tr>
+                <td>#{{ b.id }}</td>
+                <td><span class="badge {{ b.status }}">{{ b.status }}</span></td>
+                <td>{{ b.created_at }}</td>
+                <td><a class="btn btn-small" href="{{ url_for('builds.view_build', build_id=b.id) }}">Открыть</a></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4" class="muted">Сборок ещё не было</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h2>Образы</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tag</th>
+            <th>Создан</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for img in images %}
+            <tr>
+                <td>#{{ img.id }}</td>
+                <td>{{ img.image_tag }}</td>
+                <td>{{ img.created_at }}</td>
+                <td><a class="btn btn-small" href="{{ url_for('images.view_image', image_id=img.id) }}">Открыть</a></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4" class="muted">Образов ещё нет</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<script>
+    (function () {
+        const btn = document.getElementById('simulate-commit-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            const repoUrl = "{{ req.repo_url }}";
+            const branch = "{{ req.repo_branch }}";
+            const commit = "simulated-" + Date.now();
+            fetch("{{ url_for('api.commit_hook') }}", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({repo_url: repoUrl, branch: branch, commit: commit})
+            })
+                .then(r => r.json())
+                .then(data => {
+                    alert("Подходящих развёртываний: " + data.matched_deployments +
+                        "\\nПерезапущено автоматически: " + data.restarted +
+                        "\\nПомечено для рестарта: " + data.marked_for_restart);
+                    location.reload();
+                })
+                .catch(err => alert("Ошибка: " + err));
+        });
+    })();
+</script>
+{% endblock %}
+
+

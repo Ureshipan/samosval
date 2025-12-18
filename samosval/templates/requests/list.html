@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Заявки — Самосвал{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Заявки</h1>
+    {% if current_user.role == 'developer' %}
+        <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary">Новая заявка</a>
+    {% endif %}
+</div>
+
+<form method="get" class="filters-row">
+    <label>
+        Статус:
+        <select name="status" onchange="this.form.submit()">
+            <option value="">Все</option>
+            {% for s in ['draft','submitted','in_review','approved','rejected'] %}
+                <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </label>
+</form>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Имя образа</th>
+        <th>Репозиторий</th>
+        <th>Режим обновления</th>
+        <th>Owner (ID)</th>
+        <th>Статус</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for r in requests %}
+        <tr>
+            <td>#{{ r.id }}</td>
+            <td>{{ r.image_name }}</td>
+            <td class="muted">{{ r.repo_url }}@{{ r.repo_branch }}</td>
+            <td>{{ r.update_mode }}</td>
+            <td>{{ r.owner_id }}</td>
+            <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+            <td><a href="{{ url_for('requests.view_request', request_id=r.id) }}" class="btn btn-small">Открыть</a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="7" class="muted">Заявок нет</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Админка — Аудит — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Аудит</h1>
+
+<section class="card">
+    <h2>Фильтры</h2>
+    <form method="get" class="filters-row">
+        <label>
+            Пользователь:
+            <input type="text" name="user" value="{{ user_login or '' }}">
+        </label>
+        <label>
+            Действие:
+            <select name="action">
+                <option value="">Все</option>
+                {% for a in distinct_actions %}
+                    <option value="{{ a.action }}" {% if action_filter == a.action %}selected{% endif %}>{{ a.action }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Поиск в тексте:
+            <input type="text" name="text" value="{{ text_filter or '' }}">
+        </label>
+        <button class="btn btn-primary" type="submit">Фильтровать</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>События</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Время</th>
+            <th>Пользователь</th>
+            <th>Действие</th>
+            <th>Цель</th>
+            <th>Детали</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+            <tr>
+                <td>{{ row.created_at }}</td>
+                <td>{{ row.username or 'system' }}</td>
+                <td>{{ row.action }}</td>
+                <td>{{ row.target_id or '—' }}</td>
+                <td class="muted">{{ row.details }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="muted">Событий нет</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Образы — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Образы</h1>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Имя</th>
+        <th>Tag</th>
+        <th>Репозиторий</th>
+        <th>Создан</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for img in images %}
+        <tr>
+            <td>#{{ img.id }}</td>
+            <td>{{ img.name }}</td>
+            <td>{{ img.image_tag }}</td>
+            <td class="muted">{{ img.repo_url }}</td>
+            <td>{{ img.created_at }}</td>
+            <td><a href="{{ url_for('images.view_image', image_id=img.id) }}" class="btn btn-small">Открыть</a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6" class="muted">Образов нет</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+

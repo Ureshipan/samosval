@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Админка — Пользователи — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Пользователи</h1>
+
+<section class="card">
+    <h2>Создать пользователя</h2>
+    <form method="post" action="{{ url_for('admin.create_user') }}" class="form-grid">
+        <label>
+            Логин
+            <input type="text" name="username" required>
+        </label>
+        <label>
+            Пароль
+            <input type="password" name="password" required>
+        </label>
+        <label>
+            Роль
+            <select name="role" required>
+                <option value="developer">разработчик (developer)</option>
+                <option value="operator">оператор (operator)</option>
+                <option value="admin">админ (admin)</option>
+            </select>
+        </label>
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Создать</button>
+        </div>
+    </form>
+</section>
+
+<section class="card">
+    <h2>Список пользователей</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>Роль</th>
+            <th>Активен</th>
+            <th>Создан</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td>
+                    {{ 'разработчик' if u.role == 'developer'
+                       else 'оператор' if u.role == 'operator'
+                       else 'админ' if u.role == 'admin'
+                       else u.role }}
+                </td>
+                <td>{{ 'да' if u.is_active else 'нет' }}</td>
+                <td>{{ u.created_at }}</td>
+                <td>
+                    {% if u.username != 'root' %}
+                        {% if u.is_active %}
+                            <form method="post" action="{{ url_for('admin.block_user', user_id=u.id) }}" style="display:inline">
+                                <button class="btn btn-small btn-secondary" type="submit">Заблокировать</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ url_for('admin.unblock_user', user_id=u.id) }}" style="display:inline">
+                                <button class="btn btn-small btn-primary" type="submit">Разблокировать</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <span class="muted">root защищён</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="muted">Пользователей нет</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+

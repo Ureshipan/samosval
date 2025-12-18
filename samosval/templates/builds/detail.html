@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Сборка #{{ build.id }} — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Сборка #{{ build.id }} — {{ build.image_name }}</h1>
+
+<section class="card">
+    <dl class="def-list horizontal">
+        <dt>Заявка</dt>
+        <dd>#{{ build.request_id }}</dd>
+        <dt>Статус</dt>
+        <dd><span class="badge {{ build.status }}">{{ build.status }}</span></dd>
+        <dt>Создана</dt>
+        <dd>{{ build.created_at }}</dd>
+        <dt>Ошибка</dt>
+        <dd>{{ build.error_message or '—' }}</dd>
+    </dl>
+</section>
+
+<section class="card">
+    <h2>Лог сборки</h2>
+    <pre id="build-log" class="log-window">{{ build.build_log or '' }}</pre>
+</section>
+
+<script>
+    (function () {
+        const logEl = document.getElementById('build-log');
+        if (!logEl) return;
+
+        function refresh() {
+            fetch("{{ url_for('api.build_log', build_id=build.id) }}")
+                .then(r => r.json())
+                .then(data => {
+                    logEl.textContent = data.log || '';
+                    if (data.status === 'queued' || data.status === 'building') {
+                        setTimeout(refresh, 2000);
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // автоподгрузка пока билд не завершён
+        const status = "{{ build.status }}";
+        if (status === 'queued' || status === 'building') {
+            setTimeout(refresh, 2000);
+        }
+    })();
+</script>
+{% endblock %}
+
+

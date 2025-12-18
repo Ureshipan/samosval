@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Дашборд</h1>
+
+<section class="cards-row">
+    <div class="card">
+        <h2>Заявки по статусам</h2>
+        <table class="table table-compact">
+            <thead>
+            <tr>
+                <th>Статус</th>
+                <th>Кол-во</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in req_stats %}
+                <tr>
+                    <td><span class="badge {{ row.status | lower | replace(' ', '-') }}">{{ row.status }}</span></td>
+                    <td>{{ row.cnt }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="2" class="muted">Пока нет заявок</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Развёртывания по статусам</h2>
+        <table class="table table-compact">
+            <thead>
+            <tr>
+                <th>Статус</th>
+                <th>Кол-во</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in dep_stats %}
+                <tr>
+                    <td><span class="badge {{ row.status | lower | replace(' ', '-') }}">{{ row.status }}</span></td>
+                    <td>{{ row.cnt }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="2" class="muted">Пока нет развёртываний</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card">
+    <h2>Последние события аудита</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Время</th>
+            <th>Пользователь</th>
+            <th>Действие</th>
+            <th>Цель</th>
+            <th>Детали</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in audit_rows %}
+            <tr>
+                <td>{{ row.created_at }}</td>
+                <td>{{ row.username or 'system' }}</td>
+                <td>{{ row.action }}</td>
+                <td>{{ row.target_id or '—' }}</td>
+                <td class="muted">{{ row.details }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="muted">Пока нет событий</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+

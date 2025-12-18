@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% set is_edit = request_id is defined %}
+{% block title %}{{ 'Редактирование заявки' if is_edit else 'Новая заявка' }} — Самосвал{% endblock %}
+
+{% block content %}
+<h1>{{ 'Редактирование заявки' if is_edit else 'Новая заявка' }}</h1>
+
+<form method="post" action="{{ url_for('requests.edit_request', request_id=request_id) if is_edit else url_for('requests.create_request') }}" class="form-grid wide">
+    <div class="form-column">
+        <label>
+            Имя образа
+            <input type="text" name="image_name" required
+                   value="{{ req.image_name if req else '' }}">
+        </label>
+        <label>
+            URL репозитория
+            <input type="text" name="repo_url" required
+                   value="{{ req.repo_url if req else '' }}">
+        </label>
+        <label>
+            Ветка репозитория
+            <input type="text" name="repo_branch"
+                   value="{{ req.repo_branch if req else 'main' }}">
+        </label>
+        <label>
+            Режим обновления
+            <select name="update_mode">
+                {% set mode = req.update_mode if req else 'static' %}
+                <option value="static"  {% if mode == 'static' %}selected{% endif %}>static</option>
+                <option value="continuous" {% if mode == 'continuous' %}selected{% endif %}>continuous</option>
+            </select>
+        </label>
+        <label>
+            Целевой commit (для static)
+            <input type="text" name="target_commit"
+                   value="{{ req.target_commit if req else '' }}">
+        </label>
+        <label>
+            Базовый образ (FROM)
+            <input type="text" name="base_image" required
+                   value="{{ req.base_image if req else '' }}">
+        </label>
+        <label>
+            Точка входа
+            <input type="text" name="entrypoint"
+                   value="{{ req.entrypoint if req else '' }}">
+        </label>
+    </div>
+
+    <div class="form-column">
+        <label>
+            Команды RUN (по строке на команду)
+            <textarea name="run_commands" rows="5">{{ req.run_commands if req and req.run_commands is not none else '' }}</textarea>
+        </label>
+        <label>
+            RAM (MB)
+            <input type="number" min="1" name="ram_mb" required
+                   value="{{ req.ram_mb if req else 512 }}">
+        </label>
+        <label>
+            vCPU
+            <input type="number" step="0.1" min="0.1" name="vcpu" required
+                   value="{{ req.vcpu if req else 1.0 }}">
+        </label>
+        <label>
+            Версия (tag)
+            <input type="text" name="version_tag" required
+                   value="{{ req.version_tag if req else '' }}">
+        </label>
+
+        <label>
+            Owner (разработчик)
+            {% set owner_val = (owner_login if owner_login is defined else (req.owner_login if req is mapping and 'owner_login' in req else '')) %}
+            <input type="text"
+                   name="owner_login"
+                   id="owner_login"
+                   list="users-owner"
+                   data-user-autocomplete="1"
+                   value="{{ owner_val }}">
+            <datalist id="users-owner"></datalist>
+        </label>
+
+        <label>
+            Collaborators (логины через запятую)
+            <div class="collab-row">
+                <input type="text"
+                       id="collab_input"
+                       list="users-collab"
+                       data-user-autocomplete="1"
+                       placeholder="логин">
+                <button type="button" class="btn btn-small" id="add-collab-btn">Добавить</button>
+            </div>
+            <datalist id="users-collab"></datalist>
+            <input type="text" name="collaborators" id="collaborators"
+                   value="{{ req.collaborators if req and req.collaborators is not none else '' }}">
+        </label>
+    </div>
+
+    <div class="form-actions full-width">
+        <button type="submit" class="btn btn-primary">
+            {{ 'Сохранить' if is_edit else 'Создать draft' }}
+        </button>
+        <a href="{{ url_for('requests.list_requests') }}" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+<script>
+    (function () {
+        const addBtn = document.getElementById('add-collab-btn');
+        if (!addBtn) return;
+        addBtn.addEventListener('click', function () {
+            const input = document.getElementById('collab_input');
+            const target = document.getElementById('collaborators');
+            if (!input || !target) return;
+            const login = (input.value || '').trim();
+            if (!login) return;
+            const current = (target.value || '').trim();
+            const parts = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+            if (!parts.includes(login)) {
+                parts.push(login);
+            }
+            target.value = parts.join(',');
+            input.value = '';
+        });
+    })();
+</script>
+{% endblock %}
+
+

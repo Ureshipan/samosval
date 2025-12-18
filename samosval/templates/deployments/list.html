@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Развёртывания — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Развёртывания</h1>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Имя</th>
+        <th>Окр.</th>
+        <th>Статус</th>
+        <th>Образ</th>
+        <th>Реплики</th>
+        <th>Порты</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for d in deployments %}
+        <tr>
+            <td>#{{ d.id }}</td>
+            <td>{{ d.name }}</td>
+            <td>{{ d.environment }}</td>
+            <td><span class="badge {{ d.status }}">{{ d.status }}</span></td>
+            <td class="muted">{{ d.image_tag }}</td>
+            <td>{{ d.replicas }}</td>
+            <td class="muted">{{ d.ports or '—' }}</td>
+            <td><a href="{{ url_for('deployments.view_deployment', deployment_id=d.id) }}" class="btn btn-small">Открыть</a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="8" class="muted">Развёртываний нет</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+

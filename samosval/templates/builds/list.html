@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Сборки — Самосвал{% endblock %}
+
+{% block content %}
+<h1>Сборки</h1>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Request</th>
+        <th>Status</th>
+        <th>Создан</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for b in builds %}
+        <tr>
+            <td>#{{ b.id }}</td>
+            <td>{{ b.image_name }} (#{{ b.request_id }})</td>
+            <td><span class="badge {{ b.status }}">{{ b.status }}</span></td>
+            <td>{{ b.created_at }}</td>
+            <td><a href="{{ url_for('builds.view_build', build_id=b.id) }}" class="btn btn-small">Открыть</a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="5" class="muted">Сборок нет</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+
